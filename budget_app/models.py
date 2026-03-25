@@ -2,39 +2,15 @@ from xml.parsers.expat import model
 from django.db import models
 
 class Produit(models.Model):
-    # --- Identifiants ---
-    reference_produit = models.CharField(max_length=50, verbose_name="Référence", default="")
-    designation = models.CharField(max_length=100, verbose_name="Désignation", default="")
-    specification = models.TextField(verbose_name="Spécification", blank=True, default="")
-    unite = models.CharField(max_length=50, verbose_name="Unité", default="")
-    
-    # --- Liaisons Comptables (Clés avec doublons) ---
-    compte_principal = models.ForeignKey(
-        'NumComptePrincipal', 
-        on_delete=models.CASCADE, 
-        verbose_name="Compte Principal",
-        null=True, 
-        blank=True
-    )
-    sous_compte = models.ForeignKey(
-        'SousCompte', 
-        on_delete=models.CASCADE, 
-        verbose_name="Sous-Compte",
-        null=True, 
-        blank=True
-    )
-    
-    # --- Prix et Stock ---
-    prix_unitaire_ht = models.DecimalField(max_digits=18, decimal_places=2, default=0)
-    prix_unitaire_ttc = models.DecimalField(max_digits=18, decimal_places=2, default=0)
-    stock_initial = models.IntegerField(verbose_name="Stock Initial", default=0)
-    stock_actuel = models.IntegerField(verbose_name="Stock Actuel", default=0)
-    
-    # --- Catégorisation ---
-    famille = models.CharField(max_length=50, verbose_name="Famille", default="")
-
+    # On utilise CharField pour le compte car il contient des points (ex: 20.01.01)
+    compte = models.CharField(max_length=100, verbose_name="Compte")
+    designation = models.CharField(max_length=255, verbose_name="Désignation")
+    quantite = models.FloatField(default=0, verbose_name="Quantité")
+    unite = models.CharField(max_length=50, blank=True, null=True, verbose_name="Unité")
+    specification = models.TextField(blank=True, null=True, verbose_name="Spécification")
+    observation = models.CharField(max_length=255, blank=True, null=True, verbose_name="Observation")
     def __str__(self):
-        return f"{self.reference_produit} - {self.designation}"
+        return f"{self.compte} - {self.designation}"
 
 class Fournisseur(models.Model):
     code_four = models.CharField(max_length=50, unique=True, verbose_name="Code Fournisseur")
@@ -68,7 +44,6 @@ class AllocationBudget(models.Model):
 class Budget(models.Model):
     allocation = models.ForeignKey(AllocationBudget, on_delete=models.CASCADE, null=True, blank=True)
     fournisseur = models.ForeignKey(Fournisseur, on_delete=models.SET_NULL, null=True, blank=True)
-    
     annee_ex = models.CharField(max_length=50, verbose_name="Code_EX")
     compte = models.CharField(max_length=50, verbose_name="Comptes") # Gardé 'compte' pour ton admin
     libelle_compte = models.CharField(max_length=255, verbose_name="Libellé_compte")
@@ -560,12 +535,10 @@ class PeriodeRecette(models.Model):
         return f"Période {self.debut_periode_recette} au {self.fin_periode_recette}"
 
 class Departement(models.Model):
-    # D'après Département.JPG
     code_ser = models.CharField(max_length=50, verbose_name="Code Service", default="")
     nom_ser = models.CharField(max_length=100, verbose_name="Nom Service", default="")
     responsable_ser = models.CharField(max_length=100, verbose_name="Responsable", default="")
     
-    # Interrupteurs WinDev
     recette = models.BooleanField(default=False, verbose_name="Recette")
     depense = models.BooleanField(default=False, verbose_name="Dépense")
 
@@ -573,24 +546,21 @@ class Departement(models.Model):
         return self.nom_ser
 
 class Pay(models.Model):
-    # D'après Pay.JPG
     date_pay = models.DateField(verbose_name="Date Paiement", null=True, blank=True)
     montant_pay = models.DecimalField(max_digits=18, decimal_places=2, verbose_name="Montant", default=0)
     mode_pay = models.CharField(max_length=50, verbose_name="Mode de paiement", default="")
     objet_payement = models.CharField(max_length=200, verbose_name="Objet", default="")
-
+  
     def __str__(self):
         return f"Pay {self.date_pay} - {self.montant_pay}"
 
 class Source(models.Model):
-    # D'après Source.JPG
     nom_source = models.CharField(max_length=100, verbose_name="Source de financement", default="")
 
     def __str__(self):
         return self.nom_source
 
 class ExerciceBudgetaire(models.Model):
-    # D'après ExerciceBudgétaire.JPG
     annee_ex = models.CharField(max_length=50, verbose_name="Année Exercice", default="")
 
     def __str__(self):
@@ -599,13 +569,11 @@ class ExerciceBudgetaire(models.Model):
 # --- ANALYSE ET LOGISTIQUE ---
 
 class Stock(models.Model):
-    # Liaisons (Clés avec doublons WinDev)
     annee_exercice = models.ForeignKey('AnneeEnCours', on_delete=models.CASCADE, verbose_name="Année_EX")
     produit = models.ForeignKey('Produit', on_delete=models.CASCADE, verbose_name="Désignation")
     source = models.ForeignKey('Source', on_delete=models.CASCADE, verbose_name="Source")
     type_budget = models.ForeignKey('TypeBudget', on_delete=models.CASCADE, verbose_name="NomTypeBudget")
 
-    # Champs de données (Stock.JPG)
     reference = models.CharField(max_length=50, verbose_name="Référence", default="")
     unite = models.CharField(max_length=50, verbose_name="Unité", default="")
     quantite_stock = models.IntegerField(verbose_name="Quantité Stock", default=0)
@@ -616,15 +584,12 @@ class Stock(models.Model):
         return f"Stock {self.produit.designation} - {self.annee_exercice}"
 
 class BudgetCompare(models.Model):
-    # Liaisons
     compte_principal = models.ForeignKey('NumComptePrincipal', on_delete=models.CASCADE, verbose_name="NumComptePrincipal")
     
-    # Champs de données (Budget comparé.JPG)
     comptes = models.CharField(max_length=50, verbose_name="Comptes", default="")
     libelle_sous_compte = models.CharField(max_length=150, verbose_name="Libellé", default="")
     annee_ex = models.CharField(max_length=50, verbose_name="Année_EX", default="")
     
-    # Comparatifs
     budget_primitive = models.DecimalField(max_digits=18, decimal_places=2, default=0)
     dbm_ajout = models.DecimalField(max_digits=18, decimal_places=2, default=0)
     dbm_moins = models.DecimalField(max_digits=18, decimal_places=2, default=0)
@@ -640,7 +605,6 @@ class FicheControle(models.Model):
     # Liaison (Fournisseur migre depuis la table Fournisseur)
     fournisseur = models.ForeignKey('Fournisseur', on_delete=models.CASCADE, verbose_name="Fournisseur")
     
-    # Champs d'après les captures
     num_fiche = models.IntegerField(verbose_name="N° Fiche", default=0)
     date_fiche = models.DateField(verbose_name="Date Fiche", null=True, blank=True)
     objet_fiche = models.CharField(max_length=200, verbose_name="Objet", default="")
@@ -652,7 +616,6 @@ class FicheControle(models.Model):
         return f"Fiche {self.num_fiche} - {self.fournisseur}"
 
 class BudgetMensuel(models.Model):
-    # Liaisons (Clés étrangères précisées)
     mois = models.ForeignKey('Mois', on_delete=models.CASCADE, verbose_name="Mois")
     # "Comptes" correspond généralement à SousCompte ou PlanComptable selon ton flux
     compte_budget = models.ForeignKey('SousCompte', on_delete=models.CASCADE, verbose_name="Comptes")

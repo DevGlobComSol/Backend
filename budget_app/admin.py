@@ -11,12 +11,12 @@ class PaiementAdmin(admin.ModelAdmin):
 class DetailsPayementAdmin(admin.ModelAdmin):
     list_display = ('num_bon_engagement', 'comptes', 'fournisseur', 'date_fact', 'budget_ligne')
     list_filter = ('date_fact', 'budget_ligne')
-
+    
 @admin.register(Produit)
 class ProduitAdmin(admin.ModelAdmin):
-    list_display = ('reference_produit', 'designation', 'compte_principal', 'sous_compte', 'stock_actuel')
-    list_filter = ('compte_principal', 'famille')
-    search_fields = ('reference_produit', 'designation')
+    list_display = ('compte', 'designation', 'quantite', 'unite')
+    list_filter = ('compte', )
+    search_fields = ('compte', 'designation')
 
 @admin.register(Fournisseur)
 class FournisseurAdmin(admin.ModelAdmin):
